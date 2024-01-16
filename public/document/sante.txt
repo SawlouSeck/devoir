@@ -1,0 +1,305 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Candidat;
+use Illuminate\Http\Request;
+
+class CandidatController extends Controller
+{
+    /**
+     * Affiche une liste de tous les candidats.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function index()
+    {
+        $candidats = Candidat::all();
+        return view('candidats.index', compact('candidats'));
+    }
+
+    /**
+     * Affiche le formulaire de création d'un candidat.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function create()
+    {
+        return view('candidats.create');
+    }
+
+    /**
+     * Stocke un nouveau candidat dans la base de données.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'nom' => 'required',
+            'prenom' => 'required',
+            // autres règles de validation...
+        ]);
+
+        Candidat::create($request->all());
+
+        return redirect()->route('candidats.index')
+            ->with('success', 'Candidat ajouté avec succès.');
+    }
+
+    /**
+     * Affiche les détails d'un candidat spécifique.
+     *
+     * @param  int  $id
+     * @return \Illuminate\View\View
+     */
+    public function show($id)
+    {
+        $candidat = Candidat::findOrFail($id);
+        return view('candidats.show', compact('candidat'));
+    }
+
+    /**
+     * Affiche le formulaire de mise à jour d'un candidat.
+     *
+     * @param  int  $id
+     * @return \Illuminate\View\View
+     */
+    public function edit($id)
+    {
+        $candidat = Candidat::findOrFail($id);
+        return view('candidats.edit', compact('candidat'));
+    }
+
+    /**
+     * Met à jour le candidat spécifié dans la base de données.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'nom' => 'required',
+            'prenom' => 'required',
+            // autres règles de validation...
+        ]);
+
+        $candidat = Candidat::findOrFail($id);
+        $candidat->update($request->all());
+
+        return redirect()->route('candidats.index')
+            ->with('success', 'Candidat mis à jour avec succès.');
+    }
+
+    /**
+     * Supprime le candidat spécifié de la base de données.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function destroy($id)
+    {
+        $candidat = Candidat::findOrFail($id);
+        $candidat->delete();
+
+        return redirect()->route('candidats.index')
+            ->with('success', 'Candidat supprimé avec succès.');
+    }
+}
+*****************************PARTI SONDAGE*****************************
+
+Très bien, si vous avez déjà créé les tables pour les candidats et les programmes ainsi que les migrations correspondantes, ainsi que les contrôleurs et les modèles associés, nous pouvons maintenant procéder étape par étape pour ajouter la fonctionnalité de sondage pour les programmes de chaque candidat.
+
+Étape 1: Ajouter les Tables pour les Sondages
+Créez une nouvelle migration pour la table des sondages :
+
+bash
+Copy code
+php artisan make:migration create_polls_table
+Dans la migration, définissez les colonnes nécessaires pour les sondages :
+
+php
+Copy code
+public function up(): void
+{
+    Schema::create('polls', function (Blueprint $table) {
+        $table->id();
+        $table->unsignedBigInteger('program_id');
+        $table->string('question');
+        $table->timestamps();
+
+        $table->foreign('program_id')->references('id')->on('programmes')->onDelete('cascade');
+    });
+}
+Exécutez la migration pour créer la table :
+
+bash
+Copy code
+php artisan migrate
+Étape 2: Mettre à Jour le Modèle Programme
+Dans le modèle Programme, définissez la relation avec les sondages :
+
+php
+Copy code
+// Programme.php
+public function polls()
+{
+    return $this->hasMany(Poll::class);
+}
+Étape 3: Créer le Contrôleur et les Vues pour les Sondages
+Créez un contrôleur pour les sondages :
+
+bash
+Copy code
+php artisan make:controller PollController
+Dans ce contrôleur, implémentez les méthodes nécessaires pour créer, afficher, mettre à jour et supprimer des sondages pour les programmes.
+
+Étape 4: Mettre à Jour les Routes
+Dans le fichier de routes, définissez les routes nécessaires pour les sondages :
+
+php
+Copy code
+// web.php
+Route::resource('programmes.polls', PollController::class)->shallow();
+Étape 5: Créer les Vues
+Créez les vues nécessaires pour afficher les sondages et permettre aux utilisateurs de donner leur avis.
+
+Étape 6: Implémenter la Logique de Sondage
+Dans le contrôleur des sondages, implémentez la logique pour gérer les réponses des utilisateurs aux sondages et calculer les résultats.
+
+En suivant ces étapes, vous devriez être en mesure d'ajouter la fonctionnalité de sondage pour les programmes de chaque candidat dans votre application. Assurez-vous de tester soigneusement chaque étape et de suivre les meilleures pratiques de développement pour garantir la qualité et la fiabilité de votre application.
+*******************formulaire*********************
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AJOUTER UN CANDIDAT</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <style>
+        /* Styles personnalisés */
+        body {
+            background-color: #e6f7ff; /* Bleu clair pour le fond */
+            color: #004d99; /* Bleu foncé pour le texte */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            border-radius: 8px;
+        }
+        .form-container {
+            background-color: #ffffff;
+
+        }
+
+        h1 {
+            color: #0056b3; /* Bleu pour le titre */
+        }
+
+        .btn {
+            background-color: #007bff; /* Bleu pour les boutons */
+            border-color: #007bff; /* Bleu pour la bordure des boutons */
+        }
+
+        .btn:hover {
+            background-color: #0056b3; /* Bleu foncé au survol */
+            border-color: #0056b3; /* Bleu foncé pour la bordure au survol */
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row align-items-start">
+        <div class="col">
+            <h1>AJOUTER UN CANDIDAT</h1>
+            <hr>
+            <tr></tr>
+            <a href="/programme" class="btn btn-primary">Programme</a>
+            <a href="/candidat" class="btn btn-primary">Candidat</a>
+            <a href="/secteur" class="btn btn-primary">Secteur</a>
+            <a href="/electeur" class="btn btn-primary">Electeur</a>
+        </tr>
+
+            @if (session('status'))
+                <div class="alert alert-success">{{ session('status') }}</div>
+            @endif
+
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li class="alert alert-danger">{{ $error }}</li>
+                @endforeach
+            </ul>
+
+            <form action="programme/traitement" method="POST" class="form-group" enctype="multipart/form-data">
+                @csrf
+                @method('delete')
+                <div class="form-group">
+                    <label for="Nom" class="form-label">Titre</label>
+                    <input type="text" class="form-control" id="Nom" name="Nom" required>
+                </div>
+                <div class="form-group">
+                    <label for="Prenom" class="form-label">contenu</label>
+                    <input type="text" class="form-control" id="Prenom" name="Prenom" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="Parti" class="form-label">Parti</label>
+                    <input type="text" class="form-control" id="Parti" name="Parti" required>
+                </div>
+                <div class="form-group">
+                    <label for="Biographie" class="form-label">Biographie</label>
+                    <input type="text" class="form-control" id="Biographie" name="Biographie" required>
+                </div>
+                <div class="form-group">
+                    <label for="Photo">Photo</label>
+                    <input type="file" class="form-control-file" id="Photo" name="Photo" accept="image/*" required>
+                    <small class="form-text text-muted">Exemple d'URL d'image : https://via.placeholder.com/150</small>
+                </div>
+                <fieldset class="row mb-3">
+                    <legend class="col-form-label col-sm-2 pt-0">Validité Candidat</legend>
+                    <div class="col-sm-10">
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="Validate" id="Validate1" value="1" checked>
+                        <label class="form-check-label" for="Validate">
+                          Candidat Validé
+                        </label>
+                      </div>
+                      <div class="form-check">
+                        <input class="form-check-input" type="radio" name="Validate" id="Validate2" value="0">
+                        <label class="form-check-label" for="Validate2">
+                          Candidat non validé
+                        </label>
+                      </div>
+
+                    </div>
+                  </fieldset>
+
+
+
+
+
+                <div class="form-group">
+                    <button type="submit" class="btn btn-info">Ajouter</button>
+                    <a href="/candidat" class="btn btn-primary">Retourner à la liste des candidats</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
